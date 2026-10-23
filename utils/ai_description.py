@@ -3,7 +3,12 @@ from config import OPENWEATHER_KEY, GEMINI_KEY
 
 # ── OpenWeatherMap ────────────────────────────────────────────────────────────
 def get_live_weather(lat: float, lon: float) -> dict:
-    """Returns {description, temp, wind_speed, is_rain, is_fog} for given coords."""
+    """Returns {description, temp, wind_speed, is_rain, is_fog, is_fallback} for given coords.
+    is_fallback=True means the API key is missing/invalid or the request failed;
+    the returned values are defaults and do NOT represent actual conditions.
+    """
+    if not OPENWEATHER_KEY or not OPENWEATHER_KEY.strip():
+        return _default_weather(is_fallback=True, reason="no_key")
     try:
         r = requests.get(
             "https://api.openweathermap.org/data/2.5/weather",
@@ -17,34 +22,41 @@ def get_live_weather(lat: float, lon: float) -> dict:
         )
         d = r.json()
         if d.get("cod") != 200:
-            return _default_weather()
+            return _default_weather(is_fallback=True, reason=str(d.get("message", "API error")))
         weather_id   = d["weather"][0]["id"]
         description  = d["weather"][0]["description"].title()
         temp         = d["main"]["temp"]
-        wind_speed   = d["wind"]["speed"]
+        humidity     = d["main"].get("humidity", None)
+        wind_speed   = d["wind"]["speed"] * 3.6  # convert m/s -> km/h
         is_rain      = weather_id < 700
         is_fog       = 700 <= weather_id < 800
         return {
             "description": description,
             "temp":        temp,
+            "humidity":    humidity,
             "wind_speed":  wind_speed,
             "is_rain":     is_rain,
             "is_fog":      is_fog,
             "raw":         description.lower(),
+            "is_fallback": False,
         }
-    except Exception:
-        return _default_weather()
+    except Exception as exc:
+        return _default_weather(is_fallback=True, reason=str(exc))
 
 
-def _default_weather() -> dict:
+def _default_weather(is_fallback: bool = True, reason: str = "unknown") -> dict:
     return {
         "description": "Clear",
         "temp": 28.0,
+        "humidity": None,
         "wind_speed": 5.0,
         "is_rain": False,
         "is_fog": False,
         "raw": "clear",
+        "is_fallback": is_fallback,
+        "fallback_reason": reason,
     }
+
 
 
 # ── Gemini description generator ─────────────────────────────────────────────

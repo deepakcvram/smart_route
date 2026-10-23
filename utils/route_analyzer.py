@@ -92,6 +92,8 @@ def find_hotspots_on_route(route_coords: list,
             "top_cause":       hs["top_cause"],
             "top_weather":     hs["top_weather"],
             "peak_hour":       int(hs["peak_hour"]),
+            "night_pct":       int(hs.get("night_pct", 0)),
+            "top_day":         str(hs.get("top_day", "Monday")),
             "why":             hs["why"],
             "route_idx":       closest_route_idx,
         })

@@ -249,3 +249,50 @@ def get_nearby_hotspots(lat: float, lon: float,
     )
     nearby = hotspots[hotspots["distance_m"] <= radius_m].sort_values("distance_m")
     return nearby
+
+
+_DS1_CACHED = None
+
+
+def get_historical_accident_points(route_coords=None, max_points=2500):
+    """
+    Returns a list of [latitude, longitude, weight] for HeatMap rendering.
+    Filters invalid coordinates. If route_coords is provided, extracts
+    historical points within the route's bounding box (+ margin) for a
+    route-focused heatmap; otherwise returns representative regional points.
+    """
+    global _DS1_CACHED
+    if _DS1_CACHED is None:
+        try:
+            _DS1_CACHED = _load_ds1()
+        except Exception:
+            return []
+
+    df = _DS1_CACHED.dropna(subset=["latitude", "longitude"])
+    if df.empty:
+        return []
+
+    if route_coords and len(route_coords) > 1:
+        lats = [c[0] for c in route_coords]
+        lons = [c[1] for c in route_coords]
+        margin = 0.18  # roughly ~20km corridor margin
+        min_lat, max_lat = min(lats) - margin, max(lats) + margin
+        min_lon, max_lon = min(lons) - margin, max(lons) + margin
+
+        filtered = df[
+            (df["latitude"] >= min_lat) & (df["latitude"] <= max_lat) &
+            (df["longitude"] >= min_lon) & (df["longitude"] <= max_lon)
+        ]
+        if not filtered.empty:
+            df = filtered
+
+    if len(df) > max_points:
+        df = df.sample(n=max_points, random_state=42)
+
+    # Weight by severity (1=minor, 2=major, 3=fatal)
+    heat_data = [
+        [float(r["latitude"]), float(r["longitude"]), float(r.get("severity", 1)) / 3.0]
+        for _, r in df.iterrows()
+    ]
+    return heat_data
+

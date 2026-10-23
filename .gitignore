@@ -1,27 +1,43 @@
-# Python
+# Python bytecode and caches
 __pycache__/
 *.py[cod]
-*.pyo
-.env
+*$py.class
+*.so
+.pytest_cache/
 
-# Model & data cache — too large for GitHub
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# Large model binaries & generated caches
 sample_data/hotspots.pkl
 sample_data/risk_model.pkl
-risk_model.pkl
-
-# Logs & cache — regenerated at runtime
 sample_data/retrain_log.json
 sample_data/news_cache.json
+*.pkl
+*.joblib
 
-# Virtual environment
+# Unrelated large documents
+assets/images/*.pdf
+
+# Virtual Environments
 venv/
 env/
 .venv/
+ENV/
 
-# OS
+# Streamlit runtime and logs
+.streamlit/secrets.toml
+*.log
+
+# Operating System files
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# IDE
+# IDE and Editor configurations
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
